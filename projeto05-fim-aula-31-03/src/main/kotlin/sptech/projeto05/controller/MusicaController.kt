@@ -2,126 +2,77 @@ package sptech.projeto05.controller
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import sptech.projeto05.entity.Musica
+import sptech.projeto05.entity.Usuario
 
-// @RestController
-// @RequestMapping("/musicas")
-class MusicaController {
+@RestController
+@RequestMapping("/usuarios/base")
+class UsuarioBaseController {
 
-    val musicas = mutableListOf(
-        Musica(1, "Aquarela", "Toquinho"),
-        Musica(2, "O Bêbado e o Equilibrista", "Elis Regina"),
-        Musica(3, "O Mundo é um Moinho", "Cartola"),
-        Musica(4, "Cálice", "Chico Buarque"),
-        Musica(5, "Apesar de Você", "Chico Buarque")
+    // Lista simulada de usuários (memória)
+    private val usuarios = mutableListOf(
+        Usuario(1, "João Silva", "joao@email.com"),
+        Usuario(2, "Maria Oliveira", "maria@email.com"),
+        Usuario(3, "Carlos Souza", "carlos@email.com")
     )
 
+    // GET - Lista todos ou filtra por nome/email
     @GetMapping
-    fun getLista(
-        @RequestParam(required = false) pesquisa: String?
-    ): ResponseEntity<List<Musica>> {
-        if (pesquisa == null) {
-            if (musicas.isEmpty()) {
-                return ResponseEntity.status(204).build()
+    fun listar(@RequestParam(required = false) pesquisa: String?): ResponseEntity<List<Usuario>> {
+        val listaFiltrada = if (pesquisa.isNullOrBlank()) {
+            usuarios
+        } else {
+            usuarios.filter {
+                it.nome?.contains(pesquisa, ignoreCase = true) == true ||
+                        it.email?.contains(pesquisa, ignoreCase = true) == true
             }
-            return ResponseEntity.status(200).body(musicas)
         }
 
-        val listaFiltrada = musicas.filter {
-            it.nome!!.contains(pesquisa, ignoreCase = true)
-                    || it.interprete!!.contains(pesquisa, ignoreCase = true)
+        return if (listaFiltrada.isEmpty()) {
+            ResponseEntity.noContent().build()
+        } else {
+            ResponseEntity.ok(listaFiltrada)
         }
-
-        if (listaFiltrada.isEmpty()) {
-            return ResponseEntity.status(204).build()
-        }
-        return ResponseEntity.status(200).body(listaFiltrada)
     }
 
+    // POST - Adiciona um novo usuário
     @PostMapping
-    fun post(@RequestBody novaMusica: Musica):ResponseEntity<Musica> {
-        val novoId = if (musicas.isEmpty()) 1 else musicas.maxOf { it.id!! } + 1
-
-        novaMusica.id = novoId
-        musicas.add(novaMusica)
-
-        return ResponseEntity.status(201).body(novaMusica)
+    fun adicionar(@RequestBody novoUsuario: Usuario): ResponseEntity<Usuario> {
+        val novoId = (usuarios.maxOfOrNull { it.idUsuario ?: 0 } ?: 0) + 1
+        novoUsuario.idUsuario = novoId
+        usuarios.add(novoUsuario)
+        return ResponseEntity.status(201).body(novoUsuario)
     }
 
-    @DeleteMapping("/{id}")
-    fun delete(@PathVariable id:Int):ResponseEntity<Void> {
-        val idValido = musicas.count { it.id == id } > 0
-
-        if (idValido) {
-            musicas.removeIf { it.id == id }
-            return ResponseEntity.status(204).build()
-        }
-
-        return ResponseEntity.status(404).build()
-    }
-
+    // GET - Retorna um usuário específico por ID
     @GetMapping("/{id}")
-    fun getUm(@PathVariable id:Int):ResponseEntity<Musica> {
-        val musicaEncontrada = musicas.find { it.id == id }
-
-        if (musicaEncontrada == null) {
-            return ResponseEntity.status(404).build()
-        }
-
-        return ResponseEntity.status(200).body(musicaEncontrada)
+    fun buscarPorId(@PathVariable id: Int): ResponseEntity<Usuario> {
+        val usuario = usuarios.find { it.idUsuario == id }
+        return usuario?.let { ResponseEntity.ok(it) }
+            ?: ResponseEntity.notFound().build()
     }
 
+    // PUT - Atualiza um usuário existente
     @PutMapping("/{id}")
-    fun put(@PathVariable id:Int, @RequestBody musicaAtualizada: Musica):ResponseEntity<Musica> {
-        val musicaEncontrada = musicas.find { it.id == id }
-
-        if (musicaEncontrada == null) {
-            return ResponseEntity.status(404).build()
+    fun atualizar(@PathVariable id: Int, @RequestBody usuarioAtualizado: Usuario): ResponseEntity<Usuario> {
+        val usuarioExistente = usuarios.find { it.idUsuario == id }
+        return if (usuarioExistente == null) {
+            ResponseEntity.notFound().build()
+        } else {
+            val index = usuarios.indexOf(usuarioExistente)
+            usuarioAtualizado.idUsuario = id
+            usuarios[index] = usuarioAtualizado
+            ResponseEntity.ok(usuarioAtualizado)
         }
-
-        val posicaoMusicaEncontrada = musicas.indexOf(musicaEncontrada)
-        musicaAtualizada.id = id
-        musicaAtualizada.dataCadastro = musicaEncontrada.dataCadastro
-        musicas[posicaoMusicaEncontrada] = musicaAtualizada
-
-        return ResponseEntity.status(200).body(musicaAtualizada)
     }
 
-    @PatchMapping("/improprio-menores/{id}")
-    fun patchImproprioMenores(@PathVariable id:Int): ResponseEntity<Musica> {
-        val musicaEncontrada = musicas.find { it.id == id }
-
-        if (musicaEncontrada == null) {
-            return ResponseEntity.status(404).build()
+    // DELETE - Remove um usuário pelo ID
+    @DeleteMapping("/{id}")
+    fun deletar(@PathVariable id: Int): ResponseEntity<Void> {
+        val foiRemovido = usuarios.removeIf { it.idUsuario == id }
+        return if (foiRemovido) {
+            ResponseEntity.noContent().build()
+        } else {
+            ResponseEntity.notFound().build()
         }
-
-        musicaEncontrada.propriaParaCriancas = false
-
-        return ResponseEntity.status(200).body(musicaEncontrada)
     }
-
-    @PatchMapping("/proprio-menores/{id}")
-    fun patchProprioMenores(@PathVariable id:Int): ResponseEntity<Musica> {
-        val musicaEncontrada = musicas.find { it.id == id }
-
-        if (musicaEncontrada == null) {
-            return ResponseEntity.status(404).build()
-        }
-
-        musicaEncontrada.propriaParaCriancas = true
-
-        return ResponseEntity.status(200).body(musicaEncontrada)
-    }
-
-    @PatchMapping("/musica-ouvida/{id}")
-    fun patchMusicaOuvida(@PathVariable id:Int): ResponseEntity<Musica> {
-        val musicaEncontrada = musicas.find { it.id == id }
-
-        if (musicaEncontrada == null) {
-            return ResponseEntity.status(404).build()
-        }
-        musicaEncontrada.quantidadeReproducoes++
-        return ResponseEntity.status(200).body(musicaEncontrada)
-    }
-
 }

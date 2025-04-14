@@ -1,38 +1,41 @@
 package sptech.projeto05.entity
 
+import com.fasterxml.jackson.annotation.JsonBackReference
 import com.fasterxml.jackson.annotation.JsonProperty
-import jakarta.persistence.Entity
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
-import jakarta.persistence.Id
-import jakarta.validation.constraints.*
-import org.hibernate.validator.constraints.br.CPF
-import java.time.LocalDate
+import jakarta.persistence.*
+import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 
-/*
-Com @Entity, o Spring vai supor que essa classe 'espelha',
-'mapeia' uma tabela chamada 'musica'
- */
-@Entity // do pacote jakarta.persistence
-data class Musica(
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    @Id // do pacote jakarta.persistence
+@Entity
+
+@Table(name = "usuario")
+
+data class Usuario(
+
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id:Int?,
-    @field:NotBlank @field:Size(min = 1, max = 15) var nome: String?,
-    @field:Size(min = 2, max = 20) var interprete: String?,
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    var dataCadastro: LocalDate = LocalDate.now(),
-    var propriaParaCriancas: Boolean = false,
-    @field:PositiveOrZero var quantidadeReproducoes: Int = 0,
-    /*@field:PastOrPresent var dataLancamento: LocalDate? = null,
-    @field:Email var emailInterprete: String? = null,
-    @field:CPF var cpfInterprete: String? = null*/
+    var idUsuario: Int? = null,
+
+    @field:NotBlank(message = "O nome é obrigatório")
+    @field:Size(min = 2, max = 255, message = "O nome deve ter entre 2 e 255 caracteres")
+    var nome: String = "",
+
+    @field:Email(message = "E-mail inválido")
+    @field:NotBlank(message = "O e-mail é obrigatório")
+    var email: String = "",
+
+    @field:NotBlank(message = "A senha é obrigatória")
+    var senha: String = "",
+
+    var isAtivo: Boolean = true,
+
+    @ManyToOne
+    @JoinColumn(name = "fk_adm")
+    @JsonBackReference
+    var administrador: Usuario? = null
+
 ) {
-// O JPA exige que exista um construtor vazio nas Entidades
-    constructor() : this(null, null, null)
-/*
-Aqui dizemos que sempre que o construtor vazio for invocado,
-será criado uma Musica com id, nome e interprete nulos
- */
+    constructor() : this(null, "", "", "", true, null)
 }
