@@ -15,4 +15,12 @@ object FileUtils {
     fun <T: Any> readJsonFileAsObject(fileName: String, targetClass:KClass<T>): T {
         return objectMapper.readValue(readJsonFile(fileName), targetClass.javaObjectType)
     }
+
+
+
+
+
+
+
+    
 }
